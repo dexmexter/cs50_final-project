@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Register
+{% endblock %}
+
+{% block main %}
+    <form class="needs_validation" id="register" action="/register" method="post">
+        <div class="form-group">
+            <input autocomplete="off" autofocus class="form-control" name="username" id="username" placeholder="New Username" type="text" required>
+        </div>
+        <div class="form-group">
+            <input class="form-control" name="password" id="password" placeholder="Password" type="password" required>
+        </div>
+        <div class="form-group">
+            <input name="confirmation" id="confirmation" placeholder="Confirm password" type="password" onkeyup='check();' required>
+        </div>
+        <div id='message'></div>
+        <button class="btn btn-primary" type="submit">Register</button>
+    </form>
+
+
+    <script>
+        var check = function() {
+	        var pswd = document.getElementById("password");
+	        var confirm = document.getElementById("confirmation");
+            var message = document.getElementById("message");
+
+            if (pswd.value == confirm.value) {
+                message.style.color = 'green';
+                message.innerHTML = 'All good';
+            }
+            else {
+      	        message.style.color = 'red';
+                message.innerHTML = 'Passwords do not match';
+            }
+        };
+
+
+        $(document).ready(function(){
+            $("button").click(function(e){
+                e.preventDefault();
+                var username=document.getElementById("username").value;
+                console.log(username);
+                $.get("/check?username=" + username, { username:username }, function(response){
+
+                    if (response == false) {
+                        alert("Username is unavailable, please try another");
+                    } else {
+                        $("#register").submit();
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}
