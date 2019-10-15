@@ -147,6 +147,9 @@ def buy():
                 )
 
                 # redirect to home page
+                flash(
+                    "Bought {} share(s) of {}".format(shares, symbol_info['symbol'])
+                )
                 return redirect("/")
 
     # Got to route from GET
@@ -188,6 +191,7 @@ def change():
         )
 
         # Redirect to home page
+        flash("Password changed")
         return logout()
 
     # Reached route via GET (clicked on link)
@@ -329,6 +333,7 @@ def register():
 
         # Redirect to home page
         # TODO send POST to Login with entered information
+        flash("Welcome aboard!")
         return redirect("/")
 
     # Reached route via GET (clicked on link)
