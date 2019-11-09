@@ -62,3 +62,60 @@ def lookup(symbol):
 def usd(value):
     """Format value as USD."""
     return f"${value:,.2f}"
+
+def stick_art(n):
+    """returns ascii drawing based on incorrect guesses for hangman game"""
+    strike_art = [
+        "   ___    \n\
+  /   |   \n\
+      |   \n\
+      |   \n\
+      |   \n\
+      |   \n\
+----------\n",
+       "   ___    \n\
+  /   |   \n\
+  o   |   \n\
+      |   \n\
+      |   \n\
+      |   \n\
+----------\n",
+       "   ___    \n\
+  /   |   \n\
+  o   |   \n\
+  |   |   \n\
+      |   \n\
+      |   \n\
+----------\n",
+       "   ___    \n\
+  /   |   \n\
+  o   |   \n\
+ /|   |   \n\
+      |   \n\
+      |   \n\
+----------\n",
+       "   ___    \n\
+  /   |   \n\
+  o   |   \n\
+ /|\  |   \n\
+      |   \n\
+      |   \n\
+----------\n",
+       "   ___    \n\
+  /   |   \n\
+  o   |   \n\
+ /|\  |   \n\
+ /    |   \n\
+      |   \n\
+----------\n",
+       "   ___    \n\
+  /   |   \n\
+  o   |   \n\
+ /|\  |   \n\
+ / \  |   \n\
+      |   \n\
+----------\n"
+        ]
+    return strike_art[n]
+
+print(stick_art(0))

@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Rock Paper Scissors
+{% endblock %}
+{% block main %}
+    <div>
+        Welcome to Rock, Paper, Scissors. Make your choice!
+    </div>
+    <form class="needs_validation" action="/rps" method="post">
+        <div class="form-group">
+            <select class="form-control" name="choice" placeholder="choice" required>
+                <option selected disabled value="">--Choose wisely--</option>
+                <option value="rock">Rock</option>
+                <option value="paper">Paper</option>
+                <option value="scissors">Scissors</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Play!</button>
+    </form>
+{% endblock %}
