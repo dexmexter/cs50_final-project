@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Puzzle {{ game_id }}
+{% endblock %}
+{% block main %}
+<style>
+table { border-collapse: collapse; }
+colgroup, tbody { border: solid medium green;  }
+td { border: solid thin; height: 3em; width 3em; padding: 0; }
+</style>
+    <div class="row">
+        <form class="needs_validation" id="save" action="/sudoku" method="post">
+            <table>
+                <colgroup><col><col><col></colgroup>
+                <colgroup><col><col><col></colgroup>
+                <colgroup><col><col><col></colgroup>
+                <tbody>
+                <tr>
+                    {% for i in range(0,9) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for i in range(9,18) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for i in range(18,27) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tbody>
+                <tr>
+                    {% for i in range(27,36) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for i in range(36,45) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for i in range(45,54) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tbody>
+                <tr>
+                    {% for i in range(54,63) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for i in range(63,72) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    {% for i in range(72,81) %}
+                        <td>
+                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
+                        </td>
+                    {% endfor %}
+                </tr>
+            </table>
+            <button class="btn btn-primary" type="submit">Save Puzzle</button>
+        </form>
+    </div>
+{% endblock %}

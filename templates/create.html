@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Generate New Puzzle
+{% endblock %}
+
+{% block main %}
+    <form class="needs_validation" action="/create" method="post">
+        <div class="form-group">
+            <select class="form-control" name="difficulty" placeholder="Difficulty" required>
+                <option selected disabled value="">--Select Difficulty--</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Insane">Insane</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Create new puzzle</button>
+    </form>
+{% endblock %}

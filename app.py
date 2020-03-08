@@ -6,12 +6,12 @@ from cs50 import SQL
 from datetime import datetime
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
 from flask_session import Session
-from random_word import RandomWords
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required
+from sudoku import createGame, printSudoku, string_to_puzzle, puzzle_to_string
 
 # Configure application
 app = Flask(__name__)
@@ -35,56 +35,14 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db = SQL("sqlite:///finance.db")
+db = SQL("sqlite:///games.db")
 
 
 @app.route("/")
 @login_required
 def index():
-    """Show portfolio of stocks"""
-    # a list of symbols owned for the current user
-    symbols = db.execute(
-        "SELECT DISTINCT symbol FROM transactions WHERE user_id = :user_id",
-        user_id=session['user_id'])
-
-    # available cash remaining
-    cash = db.execute(
-        "SELECT cash FROM users WHERE id = :id",
-        id=session['user_id']
-    )[0]['cash']
-
-    # will be a list of dictionaries for index.html
-    rows = []
-
-    # sum of cash and the current owned value of all stock shares
-    total = cash
-
-    for symbol in symbols:
-        # find the number of shares owned for this symbol
-        shares = db.execute(
-            "SELECT sum(shares) FROM transactions WHERE symbol = :symbol",
-            symbol=symbol['symbol']
-        )[0]['sum(shares)']
-
-        # check if any of this share is currently owned
-        if shares > 0:
-            # create a new dictionary for the list of rows
-            symbol_info = lookup(symbol['symbol'])
-
-            row = {
-                'symbol': symbol_info['symbol'],
-                'name': symbol_info['name'],
-                'price': usd(symbol_info['price']),
-                'share_total': usd(symbol_info['price'] * shares),
-                'shares': shares
-            }
-
-            rows.append(row)
-
-            # increment total
-            total += shares * symbol_info['price']
-
-    return render_template("index.html", cash=usd(cash), total=usd(total), rows=rows)
+    """Home page for resuming previous game or starting new game"""
+    return render_template("index.html")
 
 
 @app.route("/change", methods=["GET", "POST"])
@@ -144,18 +102,52 @@ def check():
         print("username is available")
         return jsonify(True)
 
+@app.route("/create", methods=["GET", "POST"])
+@login_required
+def create():
+    """Generate new puzzle"""
+    if request.method == "POST":
+        difficulty = request.form.get("difficulty")
+        if not difficulty:
+            return apology("Difficult not found", 400)
+
+        puzzle = createGame(difficulty)
+        puzzle = puzzle_to_string(puzzle)
+
+        db.execute(
+            "INSERT INTO puzzles (start, user_id, difficulty, puzzle)\
+            VALUES(:start, :user_id, :difficulty, :puzzle)",
+            start=datetime.now(),
+            user_id=session['user_id'],
+            difficulty=difficulty,
+            puzzle=puzzle
+        )
+
+        game_id = db.execute(
+                        "SELECT id FROM puzzles WHERE user_id = :user_id ORDER BY id DESC LIMIT 1",
+                        user_id=session['user_id']
+        )
+
+        # TODO if there has not been a game created before the resume game function fails to find a previous_game_id
+        db.execute(
+            "UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
+            game_id=game_id[0]['id'], user_id=session['user_id']
+        )
+        flash("New puzzle has been created")
+        return redirect("/")
+
+    # Got to route from GET (link)
+    else:
+        return render_template("create.html")
 
 @app.route("/history")
 @login_required
 def history():
-    """Show history of transactions"""
+    """Show history of puzzles"""
     rows = db.execute(
-        "SELECT time, symbol, price, shares FROM transactions WHERE user_id = :user_id",
+        "SELECT start, finish, difficulty, id FROM puzzles WHERE user_id = :user_id",
         user_id=session['user_id']
     )
-
-    for row in rows:
-        row['price'] = usd(row['price'])
 
     return render_template("history.html", rows=rows)
 
@@ -187,7 +179,8 @@ def login():
             return apology("invalid username and/or password", 403)
 
         # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+        session['user_id'] = rows[0]['id']
+        session['previous_game_id'] = rows[0]['previous_game_id']
 
         # Redirect user to home page
         return redirect("/")
@@ -239,8 +232,6 @@ def register():
         db.execute("INSERT INTO 'users' ('username','hash') VALUES (:username, :hash)",
                    username=username, hash=hashed_pswd)
 
-        # Redirect to home page
-        # TODO send POST to Login with entered information
         flash("Welcome aboard!")
         return redirect("/")
 
@@ -248,36 +239,44 @@ def register():
     else:
         return render_template("register.html")
 
-
-@app.route("/rps", methods=["GET", "POST"])
+@app.route("/sudoku", defaults={'game_id':'none'}, methods=["GET", "POST"])
+@app.route("/sudoku/<int:game_id>", methods=["GET", "POST"])
 @login_required
-def rps():
-    """Play Rock Paper Scissors"""
+def sudoku(game_id):
+    """Main function for displaying games"""
     if request.method == "POST":
-        user_choice = request.form.get("choice")
+        new_puzzle = []
+        for i in range(81):
+            cell = request.form.get("cell_" + str(i))
+            new_puzzle.append(cell)
 
-        if not user_choice:
-            return apology("Could not get selection", 400)
+        new_puzzle = " ".join(new_puzzle)
 
-        # Win states for the game
-        triangle = {"rock": "scissors", "scissors": "paper", "paper": "rock"}
-        valid_choice = list(triangle.keys())
-        cpu_choice = random.choice(valid_choice)
+        db.execute("UPDATE puzzles SET puzzle = :new_puzzle WHERE user_id = :user_id AND id = :game_id",
+                new_puzzle=new_puzzle, user_id=session['user_id'], game_id=session['previous_game_id']
+        )
 
-        if triangle[user_choice] == cpu_choice:
-            flash(f"You picked {user_choice} and your opponent chose {cpu_choice}. You win!")
-            return redirect("/")
+        puzzle = string_to_puzzle(new_puzzle)
 
-        elif user_choice == cpu_choice:
-            flash(f"You picked {user_choice} and your opponent also chose {cpu_choice}. Tie game!")
-            return redirect("/")
-
-        elif triangle[cpu_choice] == user_choice:
-            flash(f"You picked {user_choice} and your opponent chose {cpu_choice}. You lose!")
-            return redirect("/")
+        flash("Puzzle has been saved")
+        return render_template("sudoku.html", game_id=game_id, puzzle=puzzle)
 
     else:
-        return render_template("rps.html")
+        if game_id == 'none':
+            game_id = session['previous_game_id']
+
+        db.execute(
+            "UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
+            game_id=game_id, user_id=session['user_id']
+        )
+
+        puzzle = db.execute("SELECT puzzle FROM puzzles WHERE id = :game_id AND user_id = :user_id",
+                            game_id=game_id, user_id=session['user_id']
+        )
+
+        puzzle = string_to_puzzle(puzzle[0]['puzzle'])
+
+        return render_template("sudoku.html", game_id=game_id, puzzle=puzzle)
 
 
 def errorhandler(e):
