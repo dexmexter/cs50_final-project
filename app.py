@@ -1,3 +1,4 @@
+import copy
 import os
 import random
 import string
@@ -11,7 +12,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException, InternalServe
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required
-from sudoku import createGame, printSudoku, string_to_puzzle, puzzle_to_string
+from sudoku import createGame, puzzle_to_string, string_to_puzzle, sudokuChecker
 
 # Configure application
 app = Flask(__name__)
@@ -114,13 +115,19 @@ def create():
         puzzle = createGame(difficulty)
         puzzle = puzzle_to_string(puzzle)
 
+        blanks = []
+        for i in puzzle:
+            if i == "0":
+                blanks.append(i)
+
         db.execute(
-            "INSERT INTO puzzles (start, user_id, difficulty, puzzle)\
-            VALUES(:start, :user_id, :difficulty, :puzzle)",
+            "INSERT INTO puzzles (start, user_id, difficulty, puzzle, blanks)\
+            VALUES(:start, :user_id, :difficulty, :puzzle, :blanks)",
             start=datetime.now(),
             user_id=session['user_id'],
             difficulty=difficulty,
-            puzzle=puzzle
+            puzzle=puzzle,
+            blanks=" ".join(blanks)
         )
 
         game_id = db.execute(
@@ -140,14 +147,42 @@ def create():
     else:
         return render_template("create.html")
 
+
+@app.route("/delete", methods=["GET", "POST"])
+@login_required
+def delete():
+    """Delete a puzzle"""
+
+    puzzles = db.execute(
+        "SELECT id, start, finish, difficulty FROM puzzles WHERE user_id = :user_id",
+        user_id=session['user_id'])
+
+    if request.method == "POST":
+        puzzle_deleted = request.form.get("puzzle_id")
+
+        # form missing symbol or shares
+        if not puzzle_deleted:
+            return apology("Missing data, please resubmit form.", 400)
+
+        # Remove puzzle from database
+        db.execute("DELETE FROM puzzles WHERE id = :puzzle_deleted",
+                puzzle_deleted=puzzle_deleted)
+
+        # send user to home page
+        flash("Puzzle has been deleted")
+        return redirect("/")
+
+    else:
+        return render_template("delete.html", puzzles=puzzles)
+
+
 @app.route("/history")
 @login_required
 def history():
     """Show history of puzzles"""
     rows = db.execute(
         "SELECT start, finish, difficulty, id FROM puzzles WHERE user_id = :user_id",
-        user_id=session['user_id']
-    )
+        user_id=session['user_id'])
 
     return render_template("history.html", rows=rows)
 
@@ -239,44 +274,76 @@ def register():
     else:
         return render_template("register.html")
 
-@app.route("/sudoku", defaults={'game_id':'none'}, methods=["GET", "POST"])
+@app.route("/sudoku", defaults={'game_id':None}, methods=["GET", "POST"])
 @app.route("/sudoku/<int:game_id>", methods=["GET", "POST"])
 @login_required
 def sudoku(game_id):
     """Main function for displaying games"""
     if request.method == "POST":
-        new_puzzle = []
+        new_blanks = []
         for i in range(81):
             cell = request.form.get("cell_" + str(i))
-            new_puzzle.append(cell)
+            if cell:
+                new_blanks.append(cell)
 
-        new_puzzle = " ".join(new_puzzle)
+        new_blanks = " ".join(new_blanks)
 
-        db.execute("UPDATE puzzles SET puzzle = :new_puzzle WHERE user_id = :user_id AND id = :game_id",
-                new_puzzle=new_puzzle, user_id=session['user_id'], game_id=session['previous_game_id']
-        )
+        db.execute("UPDATE puzzles SET blanks = :new_blanks WHERE id = :game_id",
+                new_blanks=new_blanks, game_id=session['previous_game_id'])
 
-        puzzle = string_to_puzzle(new_puzzle)
+        puzzle = string_to_puzzle(db.execute("SELECT puzzle FROM puzzles WHERE id = :game_id",
+                            game_id=session['previous_game_id'])[0]['puzzle'])
 
-        flash("Puzzle has been saved")
-        return render_template("sudoku.html", game_id=game_id, puzzle=puzzle)
+        puzzle_check = copy.deepcopy(puzzle)
+        blanks_check = [int(i) for i in new_blanks.split()]
+
+        for i in puzzle_check:
+            if not i.answer:
+                blank = blanks_check.pop(0)
+                if blank > 0:
+                    i.setAnswer(blank)
+
+        solved = sudokuChecker(puzzle_check)
+
+        if solved:
+            db.execute("UPDATE puzzles SET finish = :finish WHERE id = :game_id",
+                    finish=datetime.now(), game_id=session['previous_game_id'])
+
+            rows = db.execute(
+                "SELECT start, finish, difficulty, id FROM puzzles WHERE user_id = :user_id",
+                user_id=session['user_id'])
+
+            flash("Puzzle has been successfully solved!")
+            return render_template("history.html", rows=rows)
+
+        else:
+            flash("Changes have been saved, this puzzle is not yet solved")
+            return render_template("sudoku.html", game_id=game_id, puzzle=puzzle, blanks=new_blanks)
 
     else:
-        if game_id == 'none':
+        if not game_id:
             game_id = session['previous_game_id']
+
+        if not game_id:
+            rows = db.execute(
+                "SELECT start, finish, difficulty, id FROM puzzles WHERE user_id = :user_id",
+                user_id=session['user_id'])
+
+            flash("No previous game listed, please select the game you'd like to play")
+            return render_template("history.html", rows=rows)
 
         db.execute(
             "UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
             game_id=game_id, user_id=session['user_id']
         )
 
-        puzzle = db.execute("SELECT puzzle FROM puzzles WHERE id = :game_id AND user_id = :user_id",
-                            game_id=game_id, user_id=session['user_id']
-        )
+        puzzle = string_to_puzzle(db.execute("SELECT puzzle FROM puzzles WHERE id = :game_id",
+                            game_id=game_id)[0]['puzzle'])
 
-        puzzle = string_to_puzzle(puzzle[0]['puzzle'])
+        blanks = db.execute("SELECT blanks FROM puzzles WHERE id = :game_id", game_id=game_id)[0]['blanks']
+        blanks = [int(i) for i in blanks.split()]
 
-        return render_template("sudoku.html", game_id=game_id, puzzle=puzzle)
+        return render_template("sudoku.html", game_id=game_id, puzzle=puzzle, blanks=blanks)
 
 
 def errorhandler(e):

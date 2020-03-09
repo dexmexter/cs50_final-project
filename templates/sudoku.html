@@ -6,83 +6,57 @@
 {% block main %}
 <style>
 table { border-collapse: collapse; }
-colgroup, tbody { border: solid medium green;  }
+colgroup, tbody { border: solid medium blue;  }
 td { border: solid thin; height: 3em; width 3em; padding: 0; }
 </style>
     <div class="row">
         <form class="needs_validation" id="save" action="/sudoku" method="post">
             <table>
-                <colgroup><col><col><col></colgroup>
-                <colgroup><col><col><col></colgroup>
-                <colgroup><col><col><col></colgroup>
+                {% for i in range(3) %}
+                    <colgroup><col><col><col></colgroup>
+                {% endfor %}
+
+                {% set ns = namespace(cell=0) %}
+
+                {% for i in range(3) %}
                 <tbody>
-                <tr>
-                    {% for i in range(0,9) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
+                    {% for i in range(3) %}
+                        <tr>
+                            {% for a in range(9) %}
+                            <td id="cell_{{ ns.cell }}"></td>
+                            {% set ns.cell = ns.cell + 1 %}
+                            {% endfor %}
+                        </tr>
                     {% endfor %}
-                </tr>
-                <tr>
-                    {% for i in range(9,18) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    {% for i in range(18,27) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
-                <tbody>
-                <tr>
-                    {% for i in range(27,36) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    {% for i in range(36,45) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    {% for i in range(45,54) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
-                <tbody>
-                <tr>
-                    {% for i in range(54,63) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    {% for i in range(63,72) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
-                <tr>
-                    {% for i in range(72,81) %}
-                        <td>
-                            <input type="text" name="cell_{{ i }}" size="1" value="{{ puzzle[i].returnSolved() }}">
-                        </td>
-                    {% endfor %}
-                </tr>
+                {% endfor %}
             </table>
-            <button class="btn btn-primary" type="submit">Save Puzzle</button>
+            <button class="btn btn-primary" type="submit">Save/Submit Puzzle</button>
         </form>
     </div>
+
+<script>
+    function change_cells() {
+        var cell_values = [];
+        {% for i in puzzle %}
+            cell_values.push({{ i.returnSolved() }});
+        {% endfor %}
+
+        var blank_values = [];
+        {% for i in blanks %}
+            console.log({{ i }});
+            blank_values.push({{ i }});
+        {% endfor %}
+
+        for (var i = 0; i < 81; i++) {
+            var cell = document.getElementById("cell_" + String(i));
+            if (cell_values[i] == 0) {
+                cell.innerHTML = `<input required type='text' name='cell_${String(i)}' size='1' value='${String(blank_values.shift())}'>`;
+            } else {
+                cell.innerHTML = cell_values[i]
+            }
+        }
+    }
+
+    window.onload = change_cells;
+</script>
 {% endblock %}

@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Delete
+{% endblock %}
+
+{% block main %}
+    <form class="needs_validation" action="/delete" method="post">
+        <div class="form-group">
+            <select class="form-control" name="puzzle_id" placeholder="puzzle_id" required>
+                <option selected disabled value="">--Select Puzzle--</option>
+                {% for puzzle in puzzles %}
+                    <option value="{{ puzzle['id'] }}">
+                        ID: {{ puzzle['id'] }},
+                        Start: {{ puzzle['start'] }},
+                        Finish: {{ puzzle['finish'] }},
+                        Difficulty: {{ puzzle['difficulty'] }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Delete Puzzle</button>
+    </form>
+{% endblock %}

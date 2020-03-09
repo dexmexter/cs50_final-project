@@ -90,50 +90,6 @@ def emptySudoku():
     return ans
 #}}}
 
-def printSudoku(sudoku):
-    '''Prints out a sudoku in a format that is easy for a human to read'''
-#{{{
-    row1 = []
-    row2 = []
-    row3 = []
-    row4 = []
-    row5 = []
-    row6 = []
-    row7 = []
-    row8 = []
-    row9 = []
-    for i in range(81):
-        if i in range(0,9):
-            row1.append(sudoku[i].returnSolved())
-        if i in range(9,18):
-            row2.append(sudoku[i].returnSolved())
-        if i in range(18,27):
-            row3.append(sudoku[i].returnSolved())
-        if i in range(27,36):
-            row4.append(sudoku[i].returnSolved())
-        if i in range(36,45):
-            row5.append(sudoku[i].returnSolved())
-        if i in range(45,54):
-            row6.append(sudoku[i].returnSolved())
-        if i in range(54,63):
-            row7.append(sudoku[i].returnSolved())
-        if i in range(63,72):
-            row8.append(sudoku[i].returnSolved())
-        if i in range(72,81):
-            row9.append(sudoku[i].returnSolved())
-    print(row1[0:3],row1[3:6],row1[6:10])
-    print(row2[0:3],row2[3:6],row2[6:10])
-    print(row3[0:3],row3[3:6],row3[6:10])
-    print('')
-    print(row4[0:3],row4[3:6],row4[6:10])
-    print(row5[0:3],row5[3:6],row5[6:10])
-    print(row6[0:3],row6[3:6],row6[6:10])
-    print('')
-    print(row7[0:3],row7[3:6],row7[6:10])
-    print(row8[0:3],row8[3:6],row8[6:10])
-    print(row9[0:3],row9[3:6],row9[6:10])
-#}}}
-
 def sudokuGen():
     '''Generates a completed sudoku. Sudoku is completely random'''
 #{{{
@@ -386,10 +342,10 @@ def puzzle_to_string(sudoku):
 def string_to_puzzle(sudoku):
     """ Converts a string of numbers back into a soduku puzzle """
     s = emptySudoku()
-    cells = sudoku.split()
+    cells = [int(i) for i in sudoku.split()]
 
     for i in range(81):
-        if int(cells[i]) > 0:
-            s[i].setAnswer(int(cells[i]))
+        if cells[i] > 0:
+            s[i].setAnswer(cells[i])
 
     return s
