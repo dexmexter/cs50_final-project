@@ -4,12 +4,19 @@
     Puzzle {{ game_id }}
 {% endblock %}
 {% block main %}
+
 <style>
-table { border-collapse: collapse; }
-colgroup, tbody { border: solid medium blue;  }
-td { border: solid thin; height: 3em; width 3em; padding: 0; }
+
+table { margin: 0 auto; }
+
+colgroup, tbody { border: solid thick grey; }
+
+td { border: solid thin grey;
+    height: 3.25em;
+    width: 3.25em }
+
 </style>
-    <div class="row">
+
         <form class="needs_validation" id="save" action="/sudoku" method="post">
             <table>
                 {% for i in range(3) %}
@@ -30,9 +37,9 @@ td { border: solid thin; height: 3em; width 3em; padding: 0; }
                     {% endfor %}
                 {% endfor %}
             </table>
+            </br>
             <button class="btn btn-primary" type="submit">Save/Submit Puzzle</button>
         </form>
-    </div>
 
 <script>
     function change_cells() {
@@ -50,7 +57,7 @@ td { border: solid thin; height: 3em; width 3em; padding: 0; }
         for (var i = 0; i < 81; i++) {
             var cell = document.getElementById("cell_" + String(i));
             if (cell_values[i] == 0) {
-                cell.innerHTML = `<input required type='text' name='cell_${String(i)}' size='1' value='${String(blank_values.shift())}'>`;
+                cell.innerHTML = `<input required type='number' name='cell_${String(i)}' size='1' min='0' max='9' value='${String(blank_values.shift())}'>`;
             } else {
                 cell.innerHTML = cell_values[i]
             }
@@ -59,4 +66,5 @@ td { border: solid thin; height: 3em; width 3em; padding: 0; }
 
     window.onload = change_cells;
 </script>
+
 {% endblock %}

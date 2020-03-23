@@ -130,18 +130,20 @@ def create():
             blanks=" ".join(blanks)
         )
 
-        game_id = db.execute(
-                        "SELECT id FROM puzzles WHERE user_id = :user_id ORDER BY id DESC LIMIT 1",
-                        user_id=session['user_id']
-        )
+        # Reset session['previous_game_id']
+        game_id = db.execute("SELECT id FROM puzzles WHERE user_id = :user_id ORDER BY id DESC LIMIT 1",
+                        user_id=session['user_id'])[0]['id']
+        db.execute("UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
+            game_id=game_id, user_id=session['user_id'])
 
-        # TODO if there has not been a game created before the resume game function fails to find a previous_game_id
-        db.execute(
-            "UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
-            game_id=game_id[0]['id'], user_id=session['user_id']
-        )
-        flash("New puzzle has been created")
-        return redirect("/")
+        session['previous_game_id'] = game_id
+
+        rows = db.execute(
+            "SELECT start, finish, difficulty, id FROM puzzles WHERE user_id = :user_id",
+            user_id=session['user_id'])
+
+        flash("A new puzzle with ID number {}, has been created".format(game_id))
+        return render_template("history.html", rows=rows)
 
     # Got to route from GET (link)
     else:
@@ -167,6 +169,12 @@ def delete():
         # Remove puzzle from database
         db.execute("DELETE FROM puzzles WHERE id = :puzzle_deleted",
                 puzzle_deleted=puzzle_deleted)
+
+        if int(puzzle_deleted) == session['previous_game_id']:
+            db.execute("UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
+                    game_id=puzzle_deleted, user_id=session['user_id'])
+
+            session['previous_game_id'] = None
 
         # send user to home page
         flash("Puzzle has been deleted")
@@ -325,17 +333,16 @@ def sudoku(game_id):
             game_id = session['previous_game_id']
 
         if not game_id:
-            rows = db.execute(
-                "SELECT start, finish, difficulty, id FROM puzzles WHERE user_id = :user_id",
-                user_id=session['user_id'])
+            rows = db.execute("SELECT start, finish, difficulty, id FROM puzzles WHERE user_id = :user_id",
+                            user_id=session['user_id'])
 
             flash("No previous game listed, please select the game you'd like to play")
             return render_template("history.html", rows=rows)
 
-        db.execute(
-            "UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
-            game_id=game_id, user_id=session['user_id']
-        )
+        db.execute("UPDATE users SET previous_game_id = :game_id WHERE id = :user_id",
+            game_id=game_id, user_id=session['user_id'])
+
+        session['previous_game_id'] = game_id
 
         puzzle = string_to_puzzle(db.execute("SELECT puzzle FROM puzzles WHERE id = :game_id",
                             game_id=game_id)[0]['puzzle'])
@@ -343,6 +350,7 @@ def sudoku(game_id):
         blanks = db.execute("SELECT blanks FROM puzzles WHERE id = :game_id", game_id=game_id)[0]['blanks']
         blanks = [int(i) for i in blanks.split()]
 
+        flash("This puzzle's ID number is {}".format(game_id))
         return render_template("sudoku.html", game_id=game_id, puzzle=puzzle, blanks=blanks)
 
 
